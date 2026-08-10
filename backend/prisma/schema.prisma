@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+//用户角色
+enum Role{
+  ADMIN //管理员
+  MEMBER //普通成员
+}
+
+//标签分类
+enum TagCategory{
+  TASTE //口味
+  TYPE //品类
+  SCENE //场景
+  DIFFICULTY //难度
+}
+
+//菜品难度
+enum Difficulty{
+  EASY //简单
+  MEDIUM //中等
+  HARD //困难
+}
+
+//餐次类型
+enum MealType{
+  BREAKFAST //早餐
+  LUNCH //午餐
+  DINNER //晚餐
+}
+
+//=========数据表==========
+
+model User {
+  id        Int      @id @default(autoincrement())  //主键
+  openid    String   @unique  //微信 openid 用户唯一
+  nickname  String? //微信昵称
+  avatar    String? //头像 url
+  role      Role     @default(MEMBER) //权限
+  createdAt DateTime @default(now()) //创建时间
+  updatedAt DateTime @updatedAt //更新时间
+
+  // 关联：用户创建的菜品（一对多）
+  dishes    Dish[]
+  // 关联：用户的点菜历史（一对多）
+  histories History[]
+}
+
+
+// 菜品表
+model Dish {
+  id          Int         @id @default(autoincrement())
+  name        String //菜名
+  image       String? //菜图片
+  description String? //菜介绍
+  ingredients Json? //食材清单
+  steps       Json? //做法步骤
+  difficulty  Difficulty  @default(MEDIUM) //难度
+  cookTime    Int? //预计耗时
+  douyinUrl   String? //参考链接
+  createdById Int //创建人 id
+  createdAt   DateTime    @default(now()) 
+  updatedAt   DateTime    @updatedAt
+
+  // 关联：创建人（多对一）
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  // 关联：菜品的标签（多对多，通过 DishTag 中间表）
+  tags        DishTag[]
+  // 关联：出现在哪些历史记录里（多对多，通过 History.dishIds 间接关联，这里不直接关联）
+}
+
+// 标签表
+model Tag {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique //标签名
+  category  TagCategory //分类
+  color     String? //标签颜色
+  createdAt DateTime    @default(now())
+
+  // 关联：有这个标签的菜品（多对多，通过 DishTag 中间表）
+  dishes    DishTag[]
+}
+
+// 菜品-标签关联表（多对多中间表）
+model DishTag {
+  dishId Int //菜品 id
+  tagId  Int //标签 id
+
+  // 关联：菜品
+  dish   Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  // 关联：标签
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  // 复合主键：dishId + tagId 联合唯一
+  @@id([dishId, tagId])
+}
+
+// 点菜历史表
+model History {
+  id           Int      @id @default(autoincrement())
+  date         DateTime //日期
+  mealType     MealType @default(DINNER) //枚举 早餐 / 午餐 / 晚餐
+  dishIds      Json //菜品 id 列表
+  selectedById Int //操作人 id
+  createdAt    DateTime @default(now())
+
+  // 关联：操作人（多对一）
+  selectedBy   User     @relation(fields: [selectedById], references: [id])
+}
