@@ -58,8 +58,12 @@ export class DishController {
     const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
 
     // 把 tagIds字符串转换成数字数组
+    // 把 tagIds 字符串转成数字数组
     const tagIdArray = tagIds
-      ? tagIds.split(',').map((id) => parseInt(id, 10))
+      ? tagIds
+          .split(',')
+          .map((id) => parseInt(id, 10))
+          .filter((id) => !isNaN(id) && id > 0) // 过滤掉 NaN 和小于等于 0 的
       : undefined;
 
     return this.dishService.getDishList({

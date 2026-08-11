@@ -1,7 +1,9 @@
 <template>
   <view class="dish-detail" v-if="dish">
     <!-- 菜品图片 -->
-    <image class="dish-image" :src="dish.image" mode="aspectFill" />
+    <view class="detail-header">
+      <SmartImage class="detail-image" :src="dish.image" mode="aspectFill" />
+    </view>
 
     <!-- 基本信息 -->
     <view class="info-section">
@@ -92,6 +94,7 @@
 import { ref, computed, onMounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { getDishDetail } from "../../api/dish";
+import SmartImage from "../../components/SmartImage.vue";
 
 const dish = ref<any>(null);
 const dishId = ref(0);
@@ -328,5 +331,9 @@ onLoad((options: any) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.detail-header {
+  width: 100%;
+  height: 400rpx; /* 父容器有高度，SmartImage 才能撑起来 */
 }
 </style>

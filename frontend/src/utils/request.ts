@@ -1,5 +1,4 @@
-const BASE_URl = "http://localhost:3000";
-
+export const BASE_URL = "https://huntsman-frequent-sushi.ngrok-free.dev";
 /**
  * 封装请求方法
  */
@@ -14,11 +13,12 @@ export const request = (options: {
     const token = uni.getStorageSync("token");
 
     uni.request({
-      url: BASE_URl + options.url,
+      url: BASE_URL + options.url,
       method: options.method || "GET",
       data: options.data,
       header: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true", // 加上这一行，跳过 ngrok 警告页
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.header,
       },
@@ -56,6 +56,52 @@ export const request = (options: {
       fail: (err) => {
         uni.showToast({
           title: "网络错误",
+          icon: "none",
+        });
+        reject(err);
+      },
+    });
+  });
+};
+
+/**
+ * 上传文件
+ */
+export const uploadFile = (filePath: string) => {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync("token");
+
+    uni.uploadFile({
+      url: BASE_URL + "/upload/image",
+      filePath: filePath,
+      name: "file", // 后端用 FileInterceptor('file') 接收，名字要对应
+      header: {
+        "ngrok-skip-browser-warning": "true", // 加上这一行，跳过 ngrok 警告页
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          const result = JSON.parse(res.data);
+          if (result.code === 0) {
+            resolve(result.data);
+          } else {
+            uni.showToast({
+              title: result.message || "上传失败",
+              icon: "none",
+            });
+            reject(result);
+          }
+        } else {
+          uni.showToast({
+            title: "上传失败",
+            icon: "none",
+          });
+          reject(res);
+        }
+      },
+      fail: (err) => {
+        uni.showToast({
+          title: "上传失败",
           icon: "none",
         });
         reject(err);

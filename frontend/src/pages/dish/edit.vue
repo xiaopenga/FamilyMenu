@@ -29,9 +29,9 @@
 
         <!-- 封面图 -->
         <view class="form-item">
-          <view class="label">封面图</view>
+          <view class="label">封面图 <text class="required">*</text></view>
           <view class="image-upload" @click="chooseImage">
-            <image
+            <SmartImage
               v-if="form.image"
               :src="form.image"
               class="preview-image"
@@ -75,7 +75,7 @@
 
         <!-- 标签 -->
         <view class="form-item">
-          <view class="label">标签</view>
+          <view class="label">标签 <text class="required">*</text></view>
           <view class="tag-selector">
             <view
               v-for="tag in allTags"
@@ -105,7 +105,7 @@
       <!-- 食材清单 -->
       <view class="form-section">
         <view class="section-title">
-          食材清单
+          食材清单 <text class="required">*</text>
           <text class="add-btn" @click="addIngredient">+ 添加</text>
         </view>
 
@@ -135,7 +135,7 @@
       <!-- 做法步骤 -->
       <view class="form-section">
         <view class="section-title">
-          做法步骤
+          做法步骤 <text class="required">*</text>
           <text class="add-btn" @click="addStep">+ 添加</text>
         </view>
 
@@ -240,6 +240,8 @@ import {
   getDishDetail,
 } from "../../api/dish";
 import { getTagList, createTag } from "../../api/tag";
+import { request, uploadFile, BASE_URL } from "../../utils/request";
+import SmartImage from "../../components/SmartImage.vue";
 
 // 难度选项
 const difficultyOptions = [
@@ -270,7 +272,7 @@ const loadDetail = async () => {
     form.value = {
       name: res.name || "",
       description: res.description || "",
-      image: res.image || "",
+     image: res.image || '',  // 直接赋值，相对路径也行，SmartImage 会处理
       cookTime: res.cookTime?.toString() || "",
       difficulty: res.difficulty || "MEDIUM",
       ingredients: res.ingredients || [],
@@ -304,24 +306,68 @@ const removeStep = (index: number) => {
   form.value.steps.splice(index, 1);
 };
 
-// 选择图片
+// 选择图片并上传
 const chooseImage = () => {
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
-    success: (res) => {
-      // 这里先把本地路径存起来，后面再讲上传到服务器
-      form.value.image = res.tempFilePaths[0];
+    success: async (res) => {
+      const tempFilePath = res.tempFilePaths[0];
+
+      // 先显示本地图片预览
+      form.value.image = tempFilePath;
+
+      try {
+        // 上传到后端
+        const uploadRes: any = await uploadFile(tempFilePath);
+        console.log("上传返回：", uploadRes); // 加上这一行，看看返回了什么
+        // 只存相对路径，不拼接 BASE_URL
+        form.value.image = uploadRes.url;
+
+        uni.showToast({ title: "上传成功", icon: "success" });
+      } catch (error) {
+        console.error("上传失败", error);
+        form.value.image = "";
+        uni.showToast({ title: "上传失败", icon: "none" });
+      }
     },
   });
 };
 
 // 提交表单
 const onSubmit = async () => {
-  // 校验
+  // 1. 校验菜名
   if (!form.value.name.trim()) {
     uni.showToast({ title: "请输入菜名", icon: "none" });
+    return;
+  }
+
+  // 2. 校验封面图
+  if (!form.value.image) {
+    uni.showToast({ title: "请上传封面图", icon: "none" });
+    return;
+  }
+
+  // 3. 校验标签
+  if (selectedTagIds.value.length === 0) {
+    uni.showToast({ title: "请至少选择一个标签", icon: "none" });
+    return;
+  }
+
+  // 4. 校验食材清单
+  const validIngredients = form.value.ingredients.filter((item) =>
+    item.name.trim(),
+  );
+  if (validIngredients.length === 0) {
+    uni.showToast({ title: "请至少添加一个食材", icon: "none" });
+    return;
+  }
+
+  // 5. 校验做法步骤
+  const validSteps = form.value.steps.filter((step) => step.trim());
+  if (validSteps.length === 0) {
+    uni.showToast({ title: "请至少添加一个步骤", icon: "none" });
     return;
   }
 
@@ -330,13 +376,13 @@ const onSubmit = async () => {
     const submitData: any = {
       name: form.value.name.trim(),
       description: form.value.description.trim(),
-      image: form.value.image,
+      image: form.value.image,  // 直接用，已经是相对路径
       cookTime: form.value.cookTime
         ? parseInt(form.value.cookTime, 10)
         : undefined,
       difficulty: form.value.difficulty,
-      ingredients: form.value.ingredients.filter((item) => item.name.trim()),
-      steps: form.value.steps.filter((step) => step.trim()),
+      ingredients: validIngredients, // 用过滤后的有效食材
+      steps: validSteps, // 用过滤后的有效步骤
       douyinUrl: form.value.douyinUrl.trim(),
       tagIds: selectedTagIds.value,
     };
@@ -357,6 +403,7 @@ const onSubmit = async () => {
     }, 1500);
   } catch (error) {
     console.error("提交失败", error);
+    uni.showToast({ title: "提交失败，请重试", icon: "none" });
   }
 };
 

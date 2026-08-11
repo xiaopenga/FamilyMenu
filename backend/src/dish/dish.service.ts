@@ -63,13 +63,21 @@ export class DishService {
 
     // 按标签筛选
     if (tagIds && tagIds.length > 0) {
-      where.tags = {
-        some: {
-          tagId: {
-            in: tagIds,
+      // 先过滤掉无效值（undefined、null、NaN）
+      const validTagIds = tagIds.filter(
+        (id) => typeof id === 'number' && !isNaN(id),
+      );
+
+      // 只有有效标签数量大于 0 才加筛选条件
+      if (validTagIds.length > 0) {
+        where.tags = {
+          some: {
+            tagId: {
+              in: validTagIds,
+            },
           },
-        },
-      };
+        };
+      }
     }
 
     // 查询列表数据
