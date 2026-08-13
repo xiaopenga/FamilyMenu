@@ -34,6 +34,7 @@ interface GetDishListParams {
   pageSize: number;
   keyword?: string;
   tagIds?: number[];
+  mealType?: string;
 }
 
 @Injectable()
@@ -43,13 +44,8 @@ export class DishService {
   /**
    * 获取菜品列表
    */
-  async getDishList(params: {
-    page: number;
-    pageSize: number;
-    keyword?: string;
-    tagIds?: number[];
-  }) {
-    const { page, pageSize, keyword, tagIds } = params;
+  async getDishList(params: GetDishListParams) {
+    const { page, pageSize, keyword, tagIds, mealType } = params;
 
     // 创建查询条件
     const where: any = {};
@@ -78,6 +74,13 @@ export class DishService {
           },
         };
       }
+    }
+
+    // 新增：按餐次筛选
+    if (mealType) {
+      where.mealTypes = {
+        array_contains: mealType, // Prisma 的 Json 数组包含查询
+      };
     }
 
     // 查询列表数据

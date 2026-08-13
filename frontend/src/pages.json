@@ -3,8 +3,19 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "今天吃什么",
-        "enablePullDownRefresh": true
+        "navigationBarTitleText": "今天吃什么"
+      }
+    },
+    {
+      "path": "pages/menu/today",
+      "style": {
+        "navigationBarTitleText": "今日点餐"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
       }
     },
     {
@@ -18,12 +29,38 @@
       "style": {
         "navigationBarTitleText": "编辑菜品"
       }
+    },
+    {
+      "path": "pages/history/index",
+      "style": {
+        "navigationBarTitleText": "历史记录"
+      }
     }
   ],
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#ff6b6b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/menu/today",
+        "text": "点餐"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的"
+      }
+    ]
+  },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "今天吃什么",
-    "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F8F8F8"
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5"
   }
 }

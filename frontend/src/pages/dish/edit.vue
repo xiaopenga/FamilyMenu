@@ -100,6 +100,22 @@
             + 新建标签
           </view>
         </view>
+
+        <!-- 餐次选择 -->
+        <view class="form-item">
+          <view class="label">适合餐次</view>
+          <view class="meal-type-list">
+            <view
+              v-for="item in mealTypeOptions"
+              :key="item.value"
+              class="meal-type-item"
+              :class="{ active: form.mealTypes.includes(item.value) }"
+              @click="toggleMealType(item.value)"
+            >
+              {{ item.label }}
+            </view>
+          </view>
+        </view>
       </view>
 
       <!-- 食材清单 -->
@@ -249,6 +265,22 @@ const difficultyOptions = [
   { label: "中等", value: "MEDIUM" },
   { label: "困难", value: "HARD" },
 ];
+// 餐次选项
+const mealTypeOptions = [
+  { value: "BREAKFAST", label: "早餐" },
+  { value: "LUNCH", label: "午餐" },
+  { value: "DINNER", label: "晚餐" },
+];
+
+// 切换餐次选择
+const toggleMealType = (value: string) => {
+  const index = form.value.mealTypes.indexOf(value);
+  if (index > -1) {
+    form.value.mealTypes.splice(index, 1);
+  } else {
+    form.value.mealTypes.push(value);
+  }
+};
 
 // 表单数据
 const form = ref({
@@ -260,6 +292,7 @@ const form = ref({
   ingredients: [] as Array<{ name: string; amount: string }>,
   steps: [] as string[],
   douyinUrl: "",
+  mealTypes: [] as string[], // ← 新增：选中的餐次
 });
 
 const dishId = ref(0);
@@ -272,12 +305,13 @@ const loadDetail = async () => {
     form.value = {
       name: res.name || "",
       description: res.description || "",
-     image: res.image || '',  // 直接赋值，相对路径也行，SmartImage 会处理
+      image: res.image || "", // 直接赋值，相对路径也行，SmartImage 会处理
       cookTime: res.cookTime?.toString() || "",
       difficulty: res.difficulty || "MEDIUM",
       ingredients: res.ingredients || [],
       steps: res.steps || [],
       douyinUrl: res.douyinUrl || "",
+      mealTypes: res.mealTypes || [], // ← 新增
     };
     // 回显标签
     selectedTagIds.value = res.tags?.map((item: any) => item.tagId) || [];
@@ -376,7 +410,7 @@ const onSubmit = async () => {
     const submitData: any = {
       name: form.value.name.trim(),
       description: form.value.description.trim(),
-      image: form.value.image,  // 直接用，已经是相对路径
+      image: form.value.image, // 直接用，已经是相对路径
       cookTime: form.value.cookTime
         ? parseInt(form.value.cookTime, 10)
         : undefined,
@@ -385,6 +419,7 @@ const onSubmit = async () => {
       steps: validSteps, // 用过滤后的有效步骤
       douyinUrl: form.value.douyinUrl.trim(),
       tagIds: selectedTagIds.value,
+      mealTypes: form.value.mealTypes, // ← 新增
     };
 
     if (isEdit.value) {
@@ -888,5 +923,25 @@ onLoad((options: any) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* 餐次选择 */
+.meal-type-list {
+  display: flex;
+  gap: 20rpx;
+}
+
+.meal-type-item {
+  padding: 15rpx 40rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 30rpx;
+  font-size: 26rpx;
+  color: #666;
+  background-color: #fff;
+}
+
+.meal-type-item.active {
+  background-color: #fff0f0;
+  border-color: #ff6b6b;
+  color: #ff6b6b;
 }
 </style>

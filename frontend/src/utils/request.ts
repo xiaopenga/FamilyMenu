@@ -1,4 +1,5 @@
-export const BASE_URL = "https://huntsman-frequent-sushi.ngrok-free.dev";
+export const BASE_URL = "https://4074bjzy8467.vicp.fun";
+
 /**
  * 封装请求方法
  */
@@ -18,7 +19,6 @@ export const request = (options: {
       data: options.data,
       header: {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true", // 加上这一行，跳过 ngrok 警告页
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.header,
       },
@@ -76,7 +76,6 @@ export const uploadFile = (filePath: string) => {
       filePath: filePath,
       name: "file", // 后端用 FileInterceptor('file') 接收，名字要对应
       header: {
-        "ngrok-skip-browser-warning": "true", // 加上这一行，跳过 ngrok 警告页
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       success: (res) => {

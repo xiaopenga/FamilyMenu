@@ -52,6 +52,7 @@ export class DishController {
     @Query('pageSize') pageSize?: string,
     @Query('keyword') keyword?: string,
     @Query('tagIds') tagIds?: string,
+    @Query('mealType') mealType?: string, // ← 新增
   ) {
     // 手动转数字，有默认值
     const pageNum = page ? parseInt(page, 10) : 1;
@@ -71,6 +72,7 @@ export class DishController {
       pageSize: pageSizeNum || 10,
       keyword,
       tagIds: tagIdArray,
+      mealType, // ← 新增
     });
   }
 

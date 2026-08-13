@@ -39,6 +39,7 @@
         {{ tag.name }}
       </view>
     </scroll-view>
+
     <!-- 首次加载中 -->
     <view class="loading-center" v-if="loading && list.length === 0 && !error">
       <text>加载中...</text>
@@ -50,46 +51,96 @@
       <view class="retry-btn" @click="loadList(true)">重新加载</view>
     </view>
 
-    <!-- 有数据时显示列表 -->
-    <view class="list-content" v-else-if="list.length > 0">
-      <!-- 原来的菜品列表代码，保持不变 -->
-      <view
-        v-for="item in list"
-        :key="item.id"
-        class="dish-card"
-        @click="goToDetail(item.id)"
+    <!-- 有数据时显示左右联动列表 -->
+    <view class="main-content" v-else-if="list.length > 0">
+      <!-- 左侧分类导航 -->
+      <scroll-view class="left-nav" scroll-y="true">
+        <view
+          v-for="(item, index) in mealTypeList"
+          :key="item.value"
+          class="nav-item"
+          :class="{ active: currentMealType === item.value }"
+          @click="scrollToMealType(item.value, index)"
+        >
+          {{ item.label }}
+        </view>
+      </scroll-view>
+
+      <!-- 右侧菜品列表 -->
+      <scroll-view
+        class="right-list"
+        scroll-y="true"
+        :scroll-into-view="scrollIntoViewId"
+        @scroll="onRightScroll"
       >
-        <SmartImage class="dish-image" :src="item.image" mode="aspectFill" />
-        <view class="dish-info">
-          <view class="dish-name">{{ item.name }}</view>
-          <view class="dish-desc">{{ item.description || "暂无描述" }}</view>
-          <view class="dish-meta">
-            <text v-if="item.cookTime" class="meta-item"
-              >⏱ {{ item.cookTime }}分钟</text
-            >
-            <view class="tag-list">
-              <text
-                v-for="tagItem in item.tags"
-                :key="tagItem.tag.id"
-                class="tag"
-                :style="{
-                  backgroundColor: tagItem.tag.color + '20',
-                  color: tagItem.tag.color,
-                }"
-              >
-                {{ tagItem.tag.name }}
-              </text>
+        <!-- 每个餐次一个分组 -->
+        <view
+          v-for="meal in mealTypeList"
+          :key="meal.value"
+          :id="'group-' + meal.value"
+          class="meal-group"
+        >
+          <view class="group-title">{{ meal.label }}</view>
+
+          <!-- 该餐次下的菜品 -->
+          <view
+            v-for="item in getDishesByMealType(meal.value)"
+            :key="item.id"
+            class="dish-card"
+            @click="goToDetail(item.id)"
+          >
+            <SmartImage
+              class="dish-image"
+              :src="item.image"
+              mode="aspectFill"
+            />
+            <view class="dish-info">
+              <view class="dish-name">{{ item.name }}</view>
+              <view class="dish-desc">{{
+                item.description || "暂无描述"
+              }}</view>
+              <view class="dish-meta">
+                <text v-if="item.cookTime" class="meta-item"
+                  >⏱ {{ item.cookTime }}分钟</text
+                >
+                <view class="tag-list">
+                  <text
+                    v-for="tagItem in item.tags"
+                    :key="tagItem.tag.id"
+                    class="tag"
+                    :style="{
+                      backgroundColor: tagItem.tag.color + '20',
+                      color: tagItem.tag.color,
+                    }"
+                  >
+                    {{ tagItem.tag.name }}
+                  </text>
+                </view>
+              </view>
+              <!-- 加入今日点餐按钮 -->
+              <view class="add-btn" @click.stop="addToTodayMenu(item)">+</view>
             </view>
           </view>
-        </view>
-      </view>
 
-      <!-- 加载更多 -->
-      <view class="load-more">
-        <text v-if="loading">加载中...</text>
-        <text v-else-if="noMore">没有更多了</text>
-        <text v-else>上拉加载更多</text>
-      </view>
+          <!-- 该餐次下没有菜品 -->
+          <view
+            class="empty-group"
+            v-if="getDishesByMealType(meal.value).length === 0"
+          >
+            暂无{{ meal.label }}菜品
+          </view>
+        </view>
+
+        <!-- 加载更多 -->
+        <view class="load-more">
+          <text v-if="loading">加载中...</text>
+          <text v-else-if="noMore">没有更多了</text>
+          <text v-else>上拉加载更多</text>
+        </view>
+
+        <!-- 底部留白 -->
+        <view style="height: 120rpx"></view>
+      </scroll-view>
     </view>
 
     <!-- 空状态 -->
@@ -98,6 +149,7 @@
       <text class="empty-text">暂无菜品，快去添加吧~</text>
       <view class="empty-btn" @click="goToAdd">去添加</view>
     </view>
+
     <!-- 浮动新增按钮 -->
     <view class="fab-button" @click="goToAdd">
       <text class="fab-icon">+</text>
@@ -112,6 +164,13 @@ import { getDishList } from "../../api/dish";
 import { getTagList } from "../../api/tag";
 import SmartImage from "../../components/SmartImage.vue";
 
+// 餐次列表
+const mealTypeList = [
+  { value: "BREAKFAST", label: "早餐" },
+  { value: "LUNCH", label: "午餐" },
+  { value: "DINNER", label: "晚餐" },
+];
+
 // 数据
 const list = ref<any[]>([]);
 const keyword = ref("");
@@ -120,7 +179,65 @@ const pageSize = ref(10);
 const total = ref(0);
 const loading = ref(false);
 const noMore = ref(false);
-const error = ref(false); // 加上这一行，记录是否加载失败
+const error = ref(false);
+
+// 左右联动相关
+const currentMealType = ref("BREAKFAST");
+const scrollIntoViewId = ref("");
+
+// 今日点餐列表（先存在本地，后面可以存后端）
+const todayMenuList = ref<any[]>([]);
+
+// 按餐次筛选菜品
+const getDishesByMealType = (mealType: string) => {
+  return list.value.filter((item) => {
+    return item.mealTypes && item.mealTypes.includes(mealType);
+  });
+};
+
+// 点击左侧分类，滚动到右侧对应分组
+const scrollToMealType = (mealType: string) => {
+  currentMealType.value = mealType;
+  scrollIntoViewId.value = "group-" + mealType;
+};
+
+// 右侧滚动时，计算当前在哪个分组（简化版）
+const onRightScroll = (e: any) => {
+  const query = uni.createSelectorQuery().in(this as any);
+  mealTypeList.forEach((meal) => {
+    query.select("#group-" + meal.value).boundingClientRect((rect: any) => {
+      if (rect && rect.top <= 100 && rect.bottom > 100) {
+        currentMealType.value = meal.value;
+      }
+    });
+  });
+  query.exec();
+};
+
+// 从本地存储加载
+const loadTodayMenu = () => {
+  const data = uni.getStorageSync("todayMenuList");
+  if (data) {
+    todayMenuList.value = JSON.parse(data);
+  }
+};
+
+// 保存到本地存储
+const saveTodayMenu = () => {
+  uni.setStorageSync("todayMenuList", JSON.stringify(todayMenuList.value));
+};
+
+// 加入今日点餐
+const addToTodayMenu = (dish: any) => {
+  const exists = todayMenuList.value.find((item) => item.id === dish.id);
+  if (exists) {
+    uni.showToast({ title: "已在今日点餐中", icon: "none" });
+    return;
+  }
+  todayMenuList.value.push(dish);
+  saveTodayMenu(); // 保存到本地存储
+  uni.showToast({ title: "已加入今日点餐", icon: "success" });
+};
 
 // 加载列表
 const loadList = async (isRefresh = false) => {
@@ -130,7 +247,7 @@ const loadList = async (isRefresh = false) => {
     page.value = 1;
     noMore.value = false;
     list.value = [];
-    error.value = false; // 加上这一行，刷新时重置错误状态
+    error.value = false;
   }
 
   if (noMore.value) return;
@@ -144,9 +261,8 @@ const loadList = async (isRefresh = false) => {
       tagIds:
         selectedTagIds.value.length > 0
           ? selectedTagIds.value.join(",")
-          : undefined, // 把数组转成逗号分隔的字符串
+          : undefined,
     });
-    console.log("菜品列表数据：", res.list); // 加上这一行，看看图片 URL 是什么
 
     if (page.value === 1) {
       list.value = res.list;
@@ -156,7 +272,6 @@ const loadList = async (isRefresh = false) => {
 
     total.value = res.total;
 
-    // 判断是否还有更多
     if (list.value.length >= total.value) {
       noMore.value = true;
     } else {
@@ -164,9 +279,8 @@ const loadList = async (isRefresh = false) => {
     }
   } catch (err: any) {
     console.error("加载列表失败", err);
-    // 只有首次加载（page=1）失败才显示错误状态
     if (page.value === 1) {
-      err.value = true;
+      error.value = true;
     } else {
       uni.showToast({ title: "加载失败", icon: "none" });
     }
@@ -217,7 +331,6 @@ const toggleTagFilter = (tagId: number) => {
   } else {
     selectedTagIds.value.push(tagId);
   }
-  // 重新加载列表
   loadList(true);
 };
 
@@ -232,12 +345,6 @@ onReachBottom(() => {
   loadList();
 });
 
-// 页面加载时获取数据
-onMounted(() => {
-  loadTags(); // 加载标签
-  loadList();
-});
-
 // 下拉刷新
 onPullDownRefresh(async () => {
   try {
@@ -245,6 +352,13 @@ onPullDownRefresh(async () => {
   } finally {
     uni.stopPullDownRefresh();
   }
+});
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadTags();
+  loadList();
+  loadTodayMenu(); // 加上这一行
 });
 </script>
 
@@ -271,9 +385,96 @@ onPullDownRefresh(async () => {
   font-size: 28rpx;
 }
 
-/* 列表内容 */
-.list-content {
+/* 标签筛选栏 */
+.tag-filter {
+  white-space: nowrap;
   padding: 20rpx 30rpx;
+  background-color: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.tag-item {
+  display: inline-block;
+  padding: 10rpx 25rpx;
+  margin-right: 15rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 30rpx;
+  font-size: 26rpx;
+  color: #666;
+  background-color: #fff;
+}
+
+.tag-item.active {
+  background-color: #fff0f0;
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+/* 左右联动主区域 */
+.main-content {
+  display: flex;
+  height: calc(100vh - 200rpx);
+}
+
+/* 左侧导航 */
+.left-nav {
+  width: 160rpx;
+  height: 100%;
+  background-color: #f5f5f5;
+}
+
+.nav-item {
+  padding: 40rpx 0;
+  text-align: center;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+}
+
+.nav-item.active {
+  background-color: #fff;
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 40rpx;
+  background-color: #ff6b6b;
+  border-radius: 0 6rpx 6rpx 0;
+}
+
+/* 右侧列表 */
+.right-list {
+  flex: 1;
+  height: 100%;
+  padding: 20rpx;
+}
+
+/* 餐次分组 */
+.meal-group {
+  margin-bottom: 40rpx;
+}
+
+.group-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-left: 10rpx;
+  border-left: 6rpx solid #ff6b6b;
+}
+
+.empty-group {
+  text-align: center;
+  padding: 60rpx 0;
+  font-size: 26rpx;
+  color: #999;
 }
 
 /* 菜品卡片 */
@@ -284,6 +485,7 @@ onPullDownRefresh(async () => {
   padding: 20rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .dish-image {
@@ -345,19 +547,28 @@ onPullDownRefresh(async () => {
   color: #666;
 }
 
+/* 加入今日点餐按钮 */
+.add-btn {
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  background-color: #ff6b6b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  line-height: 1;
+}
+
 /* 加载更多 */
 .load-more {
   text-align: center;
   padding: 30rpx;
   font-size: 24rpx;
-  color: #999;
-}
-
-/* 空状态 */
-.empty {
-  text-align: center;
-  padding: 100rpx 0;
-  font-size: 28rpx;
   color: #999;
 }
 
@@ -383,30 +594,7 @@ onPullDownRefresh(async () => {
   line-height: 1;
   font-weight: 300;
 }
-/* 标签筛选栏 */
-.tag-filter {
-  white-space: nowrap;
-  padding: 20rpx 30rpx;
-  background-color: #fff;
-  border-bottom: 1rpx solid #f0f0f0;
-}
 
-.tag-item {
-  display: inline-block;
-  padding: 10rpx 25rpx;
-  margin-right: 15rpx;
-  border: 1rpx solid #e0e0e0;
-  border-radius: 30rpx;
-  font-size: 26rpx;
-  color: #666;
-  background-color: #fff;
-}
-
-.tag-item.active {
-  background-color: #fff0f0;
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-}
 /* 居中加载 */
 .loading-center {
   display: flex;
@@ -439,7 +627,7 @@ onPullDownRefresh(async () => {
   font-size: 26rpx;
 }
 
-/* 空状态优化 */
+/* 空状态 */
 .empty {
   display: flex;
   flex-direction: column;

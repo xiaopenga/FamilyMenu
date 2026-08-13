@@ -82,6 +82,12 @@
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <button class="edit-btn" @click="goToEdit">编辑菜品</button>
+      <view class="btn btn-add-menu" @click="addToTodayMenu">
+        <text>加入今日点餐</text>
+      </view>
+      <view class="btn btn-edit" @click="goToEdit">
+        <text>编辑</text>
+      </view>
     </view>
   </view>
 
@@ -136,6 +142,33 @@ const goToEdit = () => {
   uni.navigateTo({
     url: `/pages/dish/edit?id=${dishId.value}`,
   });
+};
+
+// 加入今日点餐
+const addToTodayMenu = () => {
+  // 从本地存储读取现有列表
+  const data = uni.getStorageSync("todayMenuList");
+  let menuList = data ? JSON.parse(data) : [];
+
+  // 检查是否已经添加过
+  const exists = menuList.find((item: any) => item.id === dish.value.id);
+  if (exists) {
+    uni.showToast({ title: "已在今日点餐中", icon: "none" });
+    return;
+  }
+
+  // 添加到列表
+  menuList.push({
+    id: dish.value.id,
+    name: dish.value.name,
+    image: dish.value.image,
+    description: dish.value.description,
+    cookTime: dish.value.cookTime,
+  });
+
+  // 保存到本地存储
+  uni.setStorageSync("todayMenuList", JSON.stringify(menuList));
+  uni.showToast({ title: "已加入今日点餐", icon: "success" });
 };
 
 // 页面加载时获取 id，然后加载详情
@@ -335,5 +368,39 @@ onLoad((options: any) => {
 .detail-header {
   width: 100%;
   height: 400rpx; /* 父容器有高度，SmartImage 才能撑起来 */
+}
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120rpx;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 30rpx;
+  gap: 20rpx;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+.btn-add-menu {
+  background-color: #ff6b6b;
+  color: #fff;
+}
+
+.btn-edit {
+  background-color: #f5f5f5;
+  color: #666;
 }
 </style>

@@ -70,6 +70,7 @@ model Dish {
   difficulty  Difficulty  @default(MEDIUM) //难度
   cookTime    Int? //预计耗时
   douyinUrl   String? //参考链接
+  mealTypes   Json?       // 适合的餐次，存数组 ["BREAKFAST", "LUNCH", "DINNER"]
   createdById Int //创建人 id
   createdAt   DateTime    @default(now()) 
   updatedAt   DateTime    @updatedAt
