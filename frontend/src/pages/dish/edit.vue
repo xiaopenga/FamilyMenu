@@ -216,7 +216,13 @@
               :key="item.value"
               class="category-option"
               :class="{ active: newTag.category === item.value }"
-              @click="newTag.category = item.value"
+              @click="
+                newTag.category = item.value as
+                  | 'TASTE'
+                  | 'TYPE'
+                  | 'SCENE'
+                  | 'DIFFICULTY'
+              "
             >
               {{ item.label }}
             </view>
@@ -557,6 +563,32 @@ onLoad((options: any) => {
   if (options.id) {
     dishId.value = parseInt(options.id, 10);
     loadDetail();
+  }
+
+  // 新增：从 AI 新菜谱预填
+  const draft = uni.getStorageSync("newRecipeDraft");
+  if (draft) {
+    const recipe = JSON.parse(draft);
+    form.value.name = recipe.name;
+    // 食材解析（逗号分隔）
+    if (recipe.ingredients) {
+      form.value.ingredients = recipe.ingredients
+        .split(/[,，]/)
+        .map((item: string) => ({
+          name: item.trim(),
+          amount: "",
+        }));
+    }
+    // 做法解析（分号分隔）
+    if (recipe.steps) {
+      form.value.steps = recipe.steps
+        .split(/[;；]/)
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+    }
+    // 用完清除
+    uni.removeStorageSync("newRecipeDraft");
+    uni.showToast({ title: "已预填菜谱信息", icon: "none" });
   }
 });
 </script>

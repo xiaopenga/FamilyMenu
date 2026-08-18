@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { onShareAppMessage } from "@dcloudio/uni-app";
+import { onShareAppMessage, onShow } from "@dcloudio/uni-app";
 import SmartImage from "../../components/SmartImage.vue";
 import { getTagList } from "../../api/tag";
 import { getDishList } from "../../api/dish";
@@ -259,8 +259,22 @@ const doRandom = async () => {
     // 4. 如果排除后没有菜了，就用全部菜品
     const finalDishes = filteredDishes.length > 0 ? filteredDishes : dishes;
 
-    if (finalDishes.length === 0) {
-      uni.showToast({ title: "没有符合条件的菜品", icon: "none" });
+    // 如果排除后没有菜了，提示用户
+    if (filteredDishes.length === 0 && dishes.length > 0) {
+      uni.showModal({
+        title: "提示",
+        content: "最近 3 天这些菜都吃过啦，要包含近期吃过的菜吗？",
+        success: (res) => {
+          if (res.confirm) {
+            // 用户确认，用全部菜品
+            const finalDishes = dishes;
+            const count = Math.min(randomCount.value, finalDishes.length);
+            const shuffled = [...finalDishes].sort(() => Math.random() - 0.5);
+            randomResult.value = shuffled.slice(0, count);
+            randomStep.value = 2;
+          }
+        },
+      });
       return;
     }
 
@@ -333,7 +347,6 @@ const saveToHistory = () => {
   });
 };
 
-
 // 小程序分享配置
 onShareAppMessage(() => {
   const dishNames = menuList.value.map((item) => item.name).join("、");
@@ -355,6 +368,11 @@ onShareAppMessage(() => {
 onMounted(() => {
   loadMenuList();
   loadTags(); // 加上这一行
+});
+
+// 页面显示时重新加载
+onShow(() => {
+  loadMenuList();
 });
 </script>
 

@@ -27,6 +27,7 @@
     "axios": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
+    "openai": "^7.4.0",
     "qiniu": "^7.15.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"

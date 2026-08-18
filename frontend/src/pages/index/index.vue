@@ -188,10 +188,14 @@ const scrollIntoViewId = ref("");
 // 今日点餐列表（先存在本地，后面可以存后端）
 const todayMenuList = ref<any[]>([]);
 
-// 按餐次筛选菜品
+// 按餐次筛选菜品（兼容没有 mealTypes 的旧数据）
 const getDishesByMealType = (mealType: string) => {
   return list.value.filter((item) => {
-    return item.mealTypes && item.mealTypes.includes(mealType);
+    // 如果没有 mealTypes 字段，默认归到午餐和晚餐
+    if (!item.mealTypes || item.mealTypes.length === 0) {
+      return mealType === "LUNCH" || mealType === "DINNER";
+    }
+    return item.mealTypes.includes(mealType);
   });
 };
 
@@ -201,17 +205,25 @@ const scrollToMealType = (mealType: string) => {
   scrollIntoViewId.value = "group-" + mealType;
 };
 
-// 右侧滚动时，计算当前在哪个分组（简化版）
+// 防抖定时器
+let scrollTimer: any = null;
+
+// 右侧滚动时，计算当前在哪个分组（加防抖）
 const onRightScroll = (e: any) => {
-  const query = uni.createSelectorQuery().in(this as any);
-  mealTypeList.forEach((meal) => {
-    query.select("#group-" + meal.value).boundingClientRect((rect: any) => {
-      if (rect && rect.top <= 100 && rect.bottom > 100) {
-        currentMealType.value = meal.value;
-      }
+  if (scrollTimer) {
+    clearTimeout(scrollTimer);
+  }
+  scrollTimer = setTimeout(() => {
+    const query = uni.createSelectorQuery();
+    mealTypeList.forEach((meal) => {
+      query.select("#group-" + meal.value).boundingClientRect((rect: any) => {
+        if (rect && rect.top <= 150 && rect.bottom > 150) {
+          currentMealType.value = meal.value;
+        }
+      });
     });
-  });
-  query.exec();
+    query.exec();
+  }, 100); // 100ms 防抖
 };
 
 // 从本地存储加载

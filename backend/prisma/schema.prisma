@@ -56,6 +56,7 @@ model User {
   dishes    Dish[]
   // 关联：用户的点菜历史（一对多）
   histories History[]
+  conversations Conversation[]
 }
 
 
@@ -119,4 +120,26 @@ model History {
 
   // 关联：操作人（多对一）
   selectedBy   User     @relation(fields: [selectedById], references: [id])
+}
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String   @default("新对话")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  role           String   // user / assistant / tool
+  content        String   @db.Text  // 改成 Text 类型，支持长文本
+  toolCalls      Json?    // AI 调用的工具记录
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }

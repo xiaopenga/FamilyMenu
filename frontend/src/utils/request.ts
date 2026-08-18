@@ -1,4 +1,4 @@
-export const BASE_URL = "https://4074bjzy8467.vicp.fun";
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 /**
  * 封装请求方法

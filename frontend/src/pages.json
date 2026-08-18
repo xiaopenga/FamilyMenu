@@ -35,6 +35,18 @@
       "style": {
         "navigationBarTitleText": "历史记录"
       }
+    },
+    {
+      "path": "pages/ai/index",
+      "style": {
+        "navigationBarTitleText": "AI 推荐"
+      }
+    },
+    {
+      "path": "pages/ai/history",
+      "style": {
+        "navigationBarTitleText": "历史对话"
+      }
     }
   ],
   "tabBar": {
@@ -50,6 +62,10 @@
       {
         "pagePath": "pages/menu/today",
         "text": "点餐"
+      },
+      {
+        "pagePath": "pages/ai/index",
+        "text": "AI推荐"
       },
       {
         "pagePath": "pages/mine/index",

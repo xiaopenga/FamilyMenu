@@ -7,9 +7,10 @@ import { DishModule } from './dish/dish.module';
 import { TagModule } from './tag/tag.module';
 import { UploadModule } from './upload/upload.module';
 import { HistoryModule } from './history/history.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
-  imports: [UserModule, DishModule, TagModule, UploadModule, HistoryModule],
+  imports: [UserModule, DishModule, TagModule, UploadModule, HistoryModule, AiModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
