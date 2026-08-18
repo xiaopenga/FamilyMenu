@@ -159,6 +159,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { onReachBottom, onPullDownRefresh } from "@dcloudio/uni-app";
 import { getDishList } from "../../api/dish";
 import { getTagList } from "../../api/tag";
@@ -369,6 +370,9 @@ onPullDownRefresh(async () => {
 // 页面加载时获取数据
 onMounted(() => {
   loadTags();
+});
+onShow(() => {
+  noMore.value = false;
   loadList();
   loadTodayMenu(); // 加上这一行
 });

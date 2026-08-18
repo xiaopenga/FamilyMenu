@@ -82,12 +82,7 @@
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <button class="edit-btn" @click="goToEdit">编辑菜品</button>
-      <view class="btn btn-add-menu" @click="addToTodayMenu">
-        <text>加入今日点餐</text>
-      </view>
-      <view class="btn btn-edit" @click="goToEdit">
-        <text>编辑</text>
-      </view>
+      <button class="edit-btn" @click="addToTodayMenu">加入今日点餐</button>
     </view>
   </view>
 
@@ -180,7 +175,7 @@ onLoad((options: any) => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="less">
 .dish-detail {
   padding-bottom: 140rpx;
   background-color: #f5f5f5;
@@ -349,7 +344,7 @@ onLoad((options: any) => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 20rpx 30rpx;
+  padding: 20rpx 50rpx;
   background-color: #fff;
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }

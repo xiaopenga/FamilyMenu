@@ -29,8 +29,8 @@
 
 ### 前端
 - **框架**：uni-app + Vue 3 + TypeScript
-- **状态管理**：Pinia
-- **UI 组件**：uView Plus
+- **状态管理**：Vue 3 Composition API（ref/reactive）+ 本地存储
+- **UI 组件**：自定义组件（手写 CSS，无第三方 UI 库）
 - **图片处理**：SmartImage 组件（wx.downloadFile 绕过内网穿透警告）
 
 ### 后端

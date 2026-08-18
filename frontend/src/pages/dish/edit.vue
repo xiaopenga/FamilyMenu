@@ -459,7 +459,9 @@ const onDelete = () => {
           await deleteDish(dishId.value);
           uni.showToast({ title: "删除成功", icon: "success" });
           setTimeout(() => {
-            uni.navigateBack();
+            uni.switchTab({
+              url: "/pages/index/index",
+            });
           }, 1500);
         } catch (error) {
           console.error("删除失败", error);
